@@ -35,7 +35,7 @@ def df_stats(df,df_p,df_s):
         grouped_df_final_pt = grouped_df_pt[['Sell Out']].head(10)
         st.table(grouped_df_final_pt.style.format({'Sell Out':'{:,.0f}'}))
         st.write('')
-        st.write('**Top 10 stores for the week:**')
+        st.write('**Top 10 stores:**')
         grouped_df_st = df_s.groupby("Retailer").agg({"Sell Out":"sum"}).sort_values("Sell Out", ascending=False)
         grouped_df_final_st = grouped_df_st[['Sell Out']].head(10)
         st.table(grouped_df_final_st.style.format({'Sell Out':'{:,.0f}'}))
