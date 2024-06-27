@@ -24,6 +24,34 @@ def get_table_download_link(df, filename="transformed_data.xlsx"):
     b64 = base64.b64encode(val).decode()  # Some strings <-> bytes conversions necessary here
     return f'<a href="data:application/octet-stream;base64,{b64}" download="{filename}">Download Excel file</a>'
 
+def df_stats(df,df_p,df_s):
+        # total = df['Total Amt'].sum()
+        total_units = df['Sell Out'].sum()
+        # st.write('**The total sales for the week are:** R',"{:0,.2f}".format(total).replace(',', ' '))
+        st.write('**Number of units sold:** '"{:0,.0f}".format(total_units).replace(',', ' '))
+        st.write('')
+        st.write('**Top 10 products sold:**')
+        grouped_df_pt = df_p.groupby(["Product Description"]).agg({"Sell Out":"sum"}).sort_values("Sell Out", ascending=False)
+        grouped_df_final_pt = grouped_df_pt[['Sell Out']].head(10)
+        st.table(grouped_df_final_pt.style.format({'Sell Out':'{:,.0f}'}))
+        st.write('')
+        st.write('**Top 10 stores for the week:**')
+        grouped_df_st = df_s.groupby("Retailer").agg({"Sell Out":"sum"}).sort_values("Sell Out", ascending=False)
+        grouped_df_final_st = grouped_df_st[['Sell Out']].head(10)
+        st.table(grouped_df_final_st.style.format({'Sell Out':'{:,.0f}'}))
+        st.write('')
+        # st.write('**Bottom 10 products for the week:**')
+        # grouped_df_pb = df_p.groupby("Product Description").agg({"Sales Qty":"sum", "Total Amt":"sum"}).sort_values("Total Amt", ascending=False)
+        # grouped_df_final_pb = grouped_df_pb[['Sales Qty', 'Total Amt']].tail(10)
+        # st.table(grouped_df_final_pb.style.format({'Sales Qty':'{:,.0f}','Total Amt':'R{:,.2f}'}))
+        # st.write('')
+        # st.write('**Bottom 10 stores for the week:**')
+        # grouped_df_sb = df_s.groupby("Store Name").agg({"Total Amt":"sum"}).sort_values("Total Amt", ascending=False)
+        # grouped_df_final_sb = grouped_df_sb[['Total Amt']].tail(10)
+        # st.table(grouped_df_final_sb.style.format('R{0:,.2f}'))
+        st.write('**Final Dataframe:**') 
+        df 
+
 st.title('Rep Sell Out & Stock on Hand')
 
 # Date_End = st.date_input("Week ending: ")
@@ -147,9 +175,13 @@ if uploaded_file is not None:
     # Concatenate all transformed DataFrames
     final_df = pd.concat(transformed_dfs, ignore_index=True)
 
-    # Display the final DataFrame
-    st.write("Transformed Data:")
-    st.dataframe(final_df)
+    # Don't change these headings. Rather change the ones above
+    final_df = final_df[['365 Code','Product Description', 'Category', 'Sub-Cat','Rep','Date SOH was Collected','Retailer','Week No.','Stock on Hand','Sell Out']]
+    final_df_p = final_df[['365 Code','Product Description','Sell Out']]
+    final_df_s = final_df[['Retailer','Sell Out']]
+
+    # Show final df
+    df_stats(final_df, final_df_p, final_df_s)
 
     st.markdown(get_table_download_link(final_df), unsafe_allow_html=True)
 
