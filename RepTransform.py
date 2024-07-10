@@ -167,7 +167,7 @@ if option == "Weekly Report":
         df_bino = final_df[final_df['Category'] == 'Bino']
         df_else = final_df[final_df['Category'] != 'Bino']
 
-        st.markdown(get_table_download_link(df_bino, df_else, Date_End, WeekNumUseStr), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(df_bino, df_else, Date_End, WeekNumCallStr), unsafe_allow_html=True)
 
 else:
     st.write("No report type selected")
