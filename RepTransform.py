@@ -12,7 +12,7 @@ def to_excel(df_bino, df_else):
     processed_data = output.getvalue()
     return processed_data
 
-def get_table_download_link(df_bino, df_else, date_end, week_num_use_str, filename="transformed_data.xlsx"):
+def get_table_download_link(df_bino, df_else, date_end, report_type, filename="transformed_data.xlsx"):
     """Generates a link allowing the data in a given panda dataframe to be downloaded
     in:  dataframe
     out: href string
@@ -20,12 +20,17 @@ def get_table_download_link(df_bino, df_else, date_end, week_num_use_str, filena
     val = to_excel(df_bino, df_else)
     b64 = base64.b64encode(val).decode()  # Some strings <-> bytes conversions necessary here
     formatted_date = date_end.strftime('%Y-%m-%d')
-    formatted_filename = f"{formatted_date}_{week_num_use_str.replace(' ', '-')}_{filename}"
+    formatted_filename = f"{formatted_date}_{report_type}_{filename}"
     return f'<a href="data:application/octet-stream;base64,{b64}" download="{formatted_filename}">Download Excel file</a>'
 
 def df_stats(df, df_p, df_s):
     total_units = df['Sell Out'].sum()
-    st.write('**Number of units sold:** ' "{:0,.0f}".format(total_units).replace(',', ' '))
+    total_units_binos = df[df['Category'] == 'Bino']['Sell Out'].sum()
+    total_units_else = total_units - total_units_binos
+
+    st.write('**Total Number of units sold:** ' "{:0,.0f}".format(total_units).replace(',', ' '))
+    st.write('**Number of units sold in Bino category:** ' "{:0,.0f}".format(total_units_binos).replace(',', ' '))
+    st.write('**Other units sold:** ' "{:0,.0f}".format(total_units_else).replace(',', ' '))
     st.write('')
     st.write('**Top 10 products sold:**')
     grouped_df_pt = df_p.groupby(["Product Description"]).agg({"Sell Out": "sum"}).sort_values("Sell Out", ascending=False)
@@ -55,12 +60,12 @@ if option == "Weekly Report":
     st.write(f"The week we are calling it is: {WeekNumCallStr}")
 
     st.write("")
-    st.markdown("This will handle the following reps: **Bernie, Lee, Ryan**")
-    st.markdown("Please make sure the sheets in your file are named correctly")
+    st.markdown("Please make sure the sheets in your file are named correctly as this will be used for the name of the rep")
 
     uploaded_file = st.file_uploader("Choose an Excel file", type="xlsx")
+    submit_button = st.button("Submit Weekly Report")
 
-    if uploaded_file is not None:
+    if submit_button and uploaded_file:
         def transform_data(df):
             # Save the current header
             old_header = df.columns.tolist()
@@ -147,6 +152,9 @@ if option == "Weekly Report":
 
         # Concatenate all transformed DataFrames
         final_df = pd.concat(transformed_dfs, ignore_index=True)
+
+        # Filter out retailers containing "unnamed"
+        final_df = final_df[~final_df['Retailer'].str.contains("unnamed", case=False, na=False)]
         
         # Filter data to include only the selected week number and call it the new week number
         final_df = final_df[final_df['Week No.'] == WeekNumUseStr]
@@ -167,7 +175,67 @@ if option == "Weekly Report":
         df_bino = final_df[final_df['Category'] == 'Bino']
         df_else = final_df[final_df['Category'] != 'Bino']
 
-        st.markdown(get_table_download_link(df_bino, df_else, Date_End, WeekNumCallStr), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(df_bino, df_else, Date_End, "Weekly"), unsafe_allow_html=True)
 
+elif option == "Monthly Report":
+    Date_End = st.date_input("Month ending: ")
+    uploaded_files = st.file_uploader("Choose Excel files", type="xlsx", accept_multiple_files=True)
+    submit_button = st.button("Submit Monthly Report")
+
+    if submit_button and uploaded_files:
+        dfs_bino = []
+        dfs_else = []
+
+        for uploaded_file in uploaded_files:
+            all_sheets = pd.read_excel(uploaded_file, sheet_name=None)
+            df_bino = all_sheets.get('Bino')
+            df_else = all_sheets.get('Everything Else')
+
+            if df_bino is not None and df_else is not None:
+                # Add a column for the file date (extracting date from the filename or setting a default date)
+                df_bino['Date'] = df_bino['Week Ending']
+                df_else['Date'] = df_else['Week Ending']
+                dfs_bino.append(df_bino)
+                dfs_else.append(df_else)
+
+        if dfs_bino and dfs_else:
+            # Concatenate all Bino DataFrames and Everything Else DataFrames
+            df_bino = pd.concat(dfs_bino, ignore_index=True)
+            df_else = pd.concat(dfs_else, ignore_index=True)
+
+            # Sort by Date to ensure the latest Stock on Hand is used
+            df_bino = df_bino.sort_values(by='Date')
+            df_else = df_else.sort_values(by='Date')
+
+            # Fill empty 'Sub-Cat' with a space " "
+            df_bino['Sub-Cat'] = df_bino['Sub-Cat'].fillna(" ")
+            df_else['Sub-Cat'] = df_else['Sub-Cat'].fillna(" ")
+
+            # Aggregate Sell Out and keep the latest SOH for each product and retailer
+            df_bino = df_bino.groupby(['365 Code', 'Product Description', 'Category', 'Sub-Cat', 'Rep', 'Retailer']).agg(
+                {'Sell Out': 'sum', 'Stock on Hand': 'last'}).reset_index()
+            df_else = df_else.groupby(['365 Code', 'Product Description', 'Category', 'Sub-Cat', 'Rep', 'Retailer']).agg(
+                {'Sell Out': 'sum', 'Stock on Hand': 'last'}).reset_index()
+
+            # Combine the Bino and Everything Else DataFrames for overall statistics
+            final_df = pd.concat([df_bino, df_else], ignore_index=True)
+            final_df_p = final_df[['365 Code', 'Product Description', 'Sell Out']]
+            final_df_s = final_df[['Retailer', 'Sell Out']]
+
+            # Show combined final df stats
+            df_stats(final_df, final_df_p, final_df_s)
+            
+            # Add Month Ending to the DataFrame
+            df_bino['Month Ending'] = Date_End
+            df_else['Month Ending'] = Date_End
+
+            # Reorder columns to match the weekly report
+            df_bino = df_bino[['365 Code', 'Product Description', 'Category', 'Sub-Cat', 'Rep', 'Month Ending', 'Retailer', 'Stock on Hand', 'Sell Out']]
+            df_else = df_else[['365 Code', 'Product Description', 'Category', 'Sub-Cat', 'Rep', 'Month Ending', 'Retailer', 'Stock on Hand', 'Sell Out']]
+
+            # Provide the download link for the monthly report
+            st.markdown(get_table_download_link(df_bino, df_else, Date_End, "Monthly"), unsafe_allow_html=True)
+        else:
+            st.write("Please ensure all uploaded files contain 'Bino' and 'Everything Else' sheets.")
 else:
     st.write("No report type selected")
