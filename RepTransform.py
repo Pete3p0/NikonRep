@@ -1,12 +1,8 @@
-
 # Import libraries
 import streamlit as st
 import pandas as pd
 from io import BytesIO
 import base64
-# import locale
-# locale.setlocale( locale.LC_ALL, 'en_ZA.ANSI' )
-# st.set_page_config(layout="centered")
 
 def to_excel(df_bino, df_else):
     output = BytesIO()
@@ -27,38 +23,26 @@ def get_table_download_link(df_bino, df_else, date_end, week_num_use_str, filena
     formatted_filename = f"{formatted_date}_{week_num_use_str.replace(' ', '-')}_{filename}"
     return f'<a href="data:application/octet-stream;base64,{b64}" download="{formatted_filename}">Download Excel file</a>'
 
-def df_stats(df,df_p,df_s):
-        # total = df['Total Amt'].sum()
-        total_units = df['Sell Out'].sum()
-        # st.write('**The total sales for the week are:** R',"{:0,.2f}".format(total).replace(',', ' '))
-        st.write('**Number of units sold:** '"{:0,.0f}".format(total_units).replace(',', ' '))
-        st.write('')
-        st.write('**Top 10 products sold:**')
-        grouped_df_pt = df_p.groupby(["Product Description"]).agg({"Sell Out":"sum"}).sort_values("Sell Out", ascending=False)
-        grouped_df_final_pt = grouped_df_pt[['Sell Out']].head(10)
-        st.table(grouped_df_final_pt.style.format({'Sell Out':'{:,.0f}'}))
-        st.write('')
-        st.write('**Top 10 stores:**')
-        grouped_df_st = df_s.groupby("Retailer").agg({"Sell Out":"sum"}).sort_values("Sell Out", ascending=False)
-        grouped_df_final_st = grouped_df_st[['Sell Out']].head(10)
-        st.table(grouped_df_final_st.style.format({'Sell Out':'{:,.0f}'}))
-        st.write('')
-        # st.write('**Bottom 10 products for the week:**')
-        # grouped_df_pb = df_p.groupby("Product Description").agg({"Sales Qty":"sum", "Total Amt":"sum"}).sort_values("Total Amt", ascending=False)
-        # grouped_df_final_pb = grouped_df_pb[['Sales Qty', 'Total Amt']].tail(10)
-        # st.table(grouped_df_final_pb.style.format({'Sales Qty':'{:,.0f}','Total Amt':'R{:,.2f}'}))
-        # st.write('')
-        # st.write('**Bottom 10 stores for the week:**')
-        # grouped_df_sb = df_s.groupby("Store Name").agg({"Total Amt":"sum"}).sort_values("Total Amt", ascending=False)
-        # grouped_df_final_sb = grouped_df_sb[['Total Amt']].tail(10)
-        # st.table(grouped_df_final_sb.style.format('R{0:,.2f}'))
-        st.write('**Final Dataframe:**') 
-        df 
+def df_stats(df, df_p, df_s):
+    total_units = df['Sell Out'].sum()
+    st.write('**Number of units sold:** ' "{:0,.0f}".format(total_units).replace(',', ' '))
+    st.write('')
+    st.write('**Top 10 products sold:**')
+    grouped_df_pt = df_p.groupby(["Product Description"]).agg({"Sell Out": "sum"}).sort_values("Sell Out", ascending=False)
+    grouped_df_final_pt = grouped_df_pt[['Sell Out']].head(10)
+    st.table(grouped_df_final_pt.style.format({'Sell Out': '{:,.0f}'}))
+    st.write('')
+    st.write('**Top 10 stores:**')
+    grouped_df_st = df_s.groupby("Retailer").agg({"Sell Out": "sum"}).sort_values("Sell Out", ascending=False)
+    grouped_df_final_st = grouped_df_st[['Sell Out']].head(10)
+    st.table(grouped_df_final_st.style.format({'Sell Out': '{:,.0f}'}))
+    st.write('')
+    st.write('**Final Dataframe:**')
+    st.dataframe(df)
 
 st.title('Rep Sell Out & Stock on Hand')
 
 option = st.selectbox("Select the type of report:", ["Weekly Report", "Monthly Report"])
-
 
 if option == "Weekly Report":
     Date_End = st.date_input("Week ending: ")
@@ -77,9 +61,7 @@ if option == "Weekly Report":
     uploaded_file = st.file_uploader("Choose an Excel file", type="xlsx")
 
     if uploaded_file is not None:
-        sheet_names = ['Bernie', 'Ryan', 'Lee']
-
-        def transform_data(df, sheet_name):
+        def transform_data(df):
             # Save the current header
             old_header = df.columns.tolist()
 
@@ -152,19 +134,15 @@ if option == "Weekly Report":
             # Convert 'Date SOH was Collected' column to date type
             df['Date SOH was Collected'] = pd.to_datetime(df['Date SOH was Collected']).dt.date
 
-            # Add rep column
-            df['Rep'] = sheet_name
-
-            # Filter out records where 'Retailer' column contains 'Unnamed'
-            df = df[~df['Retailer'].str.contains('Unnamed')]
-
             return df
 
-        # Read and transform data from each sheet
+        # Read all sheets from the uploaded Excel file
+        all_sheets = pd.read_excel(uploaded_file, sheet_name=None)
+
         transformed_dfs = []
-        for sheet in sheet_names:
-            df = pd.read_excel(uploaded_file, sheet_name=sheet)
-            transformed_df = transform_data(df, sheet)
+        for sheet_name, df in all_sheets.items():
+            transformed_df = transform_data(df)
+            transformed_df['Rep'] = sheet_name  # Add the sheet name as the 'Rep' column
             transformed_dfs.append(transformed_df)
 
         # Concatenate all transformed DataFrames
@@ -190,7 +168,6 @@ if option == "Weekly Report":
         df_else = final_df[final_df['Category'] != 'Bino']
 
         st.markdown(get_table_download_link(df_bino, df_else, Date_End, WeekNumUseStr), unsafe_allow_html=True)
-
 
 else:
     st.write("No report type selected")
