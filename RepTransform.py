@@ -429,15 +429,17 @@ if option == "Weekly Report":
         products_not_on_pricelist = final_df[final_df['Dealer Price'].isna()][['365 Code', 'Product Description', 'Stock on Hand', 'Sell Out']].drop_duplicates()
         products_not_on_pricelist_summary = products_not_on_pricelist.groupby(['365 Code', 'Product Description']).agg({'Stock on Hand': 'sum', 'Sell Out': 'sum'}).reset_index()
         products_not_on_pricelist_summary = products_not_on_pricelist_summary[(products_not_on_pricelist_summary['Stock on Hand'] > 0) | (products_not_on_pricelist_summary['Sell Out'] > 0)]
-        st.write("**Products not on the pricelist:**")
+        st.write("**Products not on the pricelist that have SOH or Sell Out:**")
         st.table(products_not_on_pricelist_summary)
 
 
 
         # Identify products without a price
-        products_without_price = final_df[final_df['Dealer Price'].apply(lambda x: isinstance(x, str))][['365 Code', 'Product Description']].drop_duplicates()
+        products_without_price = final_df[final_df['Dealer Price'].apply(lambda x: isinstance(x, str))][['365 Code', 'Product Description', 'Stock on Hand', 'Sell Out']].drop_duplicates()
+        products_without_price_summary = products_without_price.groupby(['365 Code', 'Product Description']).agg({'Stock on Hand': 'sum', 'Sell Out': 'sum'}).reset_index()
+        products_without_price_summary = products_without_price_summary[(products_without_price_summary['Stock on Hand'] > 0) | (products_without_price_summary['Sell Out'] > 0)]
         st.write("**Products without a price:**")
-        st.table(products_without_price)
+        st.table(products_without_price_summary)
 
         # Convert Dealer Price to numeric, setting errors='coerce' to handle non-numeric values
         final_df['Dealer Price'] = pd.to_numeric(final_df['Dealer Price'], errors='coerce')
