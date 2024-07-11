@@ -426,9 +426,13 @@ if option == "Weekly Report":
         final_df = final_df.rename(columns={"Dealer July'24": 'Dealer Price'})
 
         # Identify products not on the pricelist
-        products_not_on_pricelist = final_df[final_df['Dealer Price'].isna()][['365 Code', 'Product Description']].drop_duplicates()
+        products_not_on_pricelist = final_df[final_df['Dealer Price'].isna()][['365 Code', 'Product Description', 'Stock on Hand', 'Sell Out']].drop_duplicates()
+        products_not_on_pricelist_summary = products_not_on_pricelist.groupby(['365 Code', 'Product Description']).agg({'Stock on Hand': 'sum', 'Sell Out': 'sum'}).reset_index()
+        products_not_on_pricelist_summary = products_not_on_pricelist_summary[(products_not_on_pricelist_summary['Stock on Hand'] > 0) | (products_not_on_pricelist_summary['Sell Out'] > 0)]
         st.write("**Products not on the pricelist:**")
-        st.table(products_not_on_pricelist)
+        st.table(products_not_on_pricelist_summary)
+
+
 
         # Identify products without a price
         products_without_price = final_df[final_df['Dealer Price'].apply(lambda x: isinstance(x, str))][['365 Code', 'Product Description']].drop_duplicates()
