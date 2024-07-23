@@ -173,11 +173,15 @@ if option == "Weekly Report":
         # Change the date to week ending
         final_df['Week Ending'] = Date_End
 
+        # Find the column with the word 'Dealer' in the pricelist
+        dealer_column = [col for col in pricelist.columns if 'Dealer' in col][0]
+        
         # Merge with the pricelist
-        final_df = final_df.merge(pricelist[['Item number', "Dealer July'24"]], left_on='365 Code', right_on='Item number', how='left')
+        final_df = final_df.merge(pricelist[['Item number', dealer_column]], left_on='365 Code', right_on='Item number', how='left')
+
 
         # Rename columns
-        final_df = final_df.rename(columns={"Dealer July'24": 'Dealer Price'})
+        final_df = final_df.rename(columns={dealer_column: 'Dealer Price'})
 
         # Identify products not on the pricelist
         products_not_on_pricelist = final_df[final_df['Dealer Price'].isna()][['365 Code', 'Product Description', 'Stock on Hand', 'Sell Out']].drop_duplicates()
