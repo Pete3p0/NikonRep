@@ -176,9 +176,12 @@ if option == "Weekly Report":
         # Find the column with the word 'Dealer' in the pricelist
         dealer_column = [col for col in pricelist.columns if 'Dealer' in col][0]
         
+        # Convert all product codes to UPPER
+        pricelist['Item number'] = pricelist['Item number'].str.upper()
+        final_df['365 Code'] = final_df['365 Code'].str.upper()
+        
         # Merge with the pricelist
         final_df = final_df.merge(pricelist[['Item number', dealer_column]], left_on='365 Code', right_on='Item number', how='left')
-
 
         # Rename columns
         final_df = final_df.rename(columns={dealer_column: 'Dealer Price'})
