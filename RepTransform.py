@@ -7,8 +7,8 @@ import base64
 def to_excel(df_bino, df_else):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_bino.to_excel(writer, sheet_name='Bino', index=False)
-        df_else.to_excel(writer, sheet_name='Everything Else', index=False)
+        df_bino.to_excel(writer, sheet_name='Sport Optics', index=False)
+        df_else.to_excel(writer, sheet_name='Nikon', index=False)
     processed_data = output.getvalue()
     return processed_data
 
@@ -33,13 +33,13 @@ def df_stats(df, df_p, df_s):
     total_units_else = total_units - total_units_binos
 
     st.write('**Total Sales:** ' "{:0,.0f}".format(total_amount).replace(',', ' '))
-    st.write('**Sales in Bino category:** ' "{:0,.0f}".format(total_amount_binos).replace(',', ' '))
-    st.write('**Sales in Other:** ' "{:0,.0f}".format(total_amount_else).replace(',', ' '))
+    st.write('**Sales in Sport Optics:** ' "{:0,.0f}".format(total_amount_binos).replace(',', ' '))
+    st.write('**Sales in Nikon:** ' "{:0,.0f}".format(total_amount_else).replace(',', ' '))
     st.write('')
 
     st.write('**Total Number of units sold:** ' "{:0,.0f}".format(total_units).replace(',', ' '))
-    st.write('**Number of units sold in Bino category:** ' "{:0,.0f}".format(total_units_binos).replace(',', ' '))
-    st.write('**Other units sold:** ' "{:0,.0f}".format(total_units_else).replace(',', ' '))
+    st.write('**Sport Optics units sold:** ' "{:0,.0f}".format(total_units_binos).replace(',', ' '))
+    st.write('**Nikon units sold:** ' "{:0,.0f}".format(total_units_else).replace(',', ' '))
     st.write('')
     st.write('**Top 10 products sold by amount:**')
     grouped_df_pt = df_p.groupby(["Product Description"]).agg({"Amount": "sum", "Sell Out": "sum"}).sort_values("Amount", ascending=False)
@@ -231,8 +231,8 @@ elif option == "Monthly Report":
 
         for uploaded_file in uploaded_files:
             all_sheets = pd.read_excel(uploaded_file, sheet_name=None)
-            df_bino = all_sheets.get('Bino')
-            df_else = all_sheets.get('Everything Else')
+            df_bino = all_sheets.get('Sport Optics')
+            df_else = all_sheets.get('Nikon')
 
             if df_bino is not None and df_else is not None:
                 # Add a column for the file date (extracting date from the filename or setting a default date)
@@ -287,7 +287,7 @@ elif option == "Monthly Report":
             # Provide the download link for the monthly report
             st.markdown(get_table_download_link(df_bino, df_else, Date_End, "Monthly"), unsafe_allow_html=True)
         else:
-            st.write("Please ensure all uploaded files contain 'Bino' and 'Everything Else' sheets.")
+            st.write("Please ensure all uploaded files contain 'Sport Optics' and 'Nikon' sheets.")
 
 
 else:
