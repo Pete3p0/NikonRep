@@ -146,7 +146,8 @@ if option == "Weekly Report":
             df["Retailer"] = df["Retailer"].str.replace(r"\.*\d+", "", regex=True)
 
             # Convert 'Date SOH was Collected' column to date type
-            df['Date SOH was Collected'] = pd.to_datetime(df['Date SOH was Collected']).dt.date
+
+            df['Date SOH was Collected'] = pd.to_datetime(df['Date SOH was Collected'].str.strip(), format="%Y-%m-%d %H:%M:%S")
 
             return df
 
