@@ -145,9 +145,12 @@ if option == "Weekly Report":
             # Remove dots and subsequent numbers, and then strip spaces from 'Retailer' column
             df["Retailer"] = df["Retailer"].str.replace(r"\.*\d+", "", regex=True)
 
-            # Convert 'Date SOH was Collected' column to date type
+            # Clean up the 'Date SOH was Collected' column by replacing '/' with '-' and stripping any whitespace
+            df['Date SOH was Collected'] = df['Date SOH was Collected'].str.replace('/', '-').str.strip()
 
-            df['Date SOH was Collected'] = pd.to_datetime(df['Date SOH was Collected'].str.strip(), format="%Y-%m-%d %H:%M:%S")
+            # Convert 'Date SOH was Collected' column to date type
+            df['Date SOH was Collected'] = pd.to_datetime(df['Date SOH was Collected'], format="%Y-%m-%d %H:%M:%S", errors='coerce')
+
 
             return df
 
